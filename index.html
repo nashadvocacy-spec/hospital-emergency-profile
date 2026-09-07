@@ -84,6 +84,13 @@ footer a{color:#fff}
 .linkout{margin-top:12px;font-size:12.5px;color:var(--muted);word-break:break-all;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 11px;display:none}
 .fallback{display:none;margin-top:18px;padding-top:16px;border-top:1px dashed #b9d3e8}
 .fallback b{font-size:15px}
+.qrwrap{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;border:2px solid var(--line);background:#fbfcfd;border-radius:12px;padding:20px;margin:0 0 12px}
+.qrbox{flex:0 0 auto;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;line-height:0}
+.qrbox svg{width:178px;height:178px;display:block}
+.qrtext{flex:1 1 260px;min-width:240px;font-size:14.5px}
+.qrtext b{color:var(--ink)}
+.qrtext p{margin:8px 0 0}
+.qrlist{color:var(--muted);font-size:13.5px}
 @media print{
  body{background:#fff;padding:0}
  .card{box-shadow:none;padding:0;margin-bottom:18px}
@@ -300,6 +307,15 @@ footer a{color:#fff}
   <h3>2. Wallet card</h3>
   <p class="hint">Cut this out and put it in a wallet, or photograph it. It is what matters most when there is no time for a page.</p>
   <div class="doc" id="wallet"></div>
+  <div class="qrwrap">
+    <div class="qrbox" id="qrbox"></div>
+    <div class="qrtext">
+      <b>The square goes on the card.</b>
+      <p>Any phone camera reads it. The emergency details come up as plain text in about a second, which is faster than anyone can read a page out loud.</p>
+      <p><b>It works with no signal.</b> The information is inside the square itself, not on a website. It reads the same in a basement emergency room with no bars and no wifi.</p>
+      <p class="qrlist" id="qrsummary"></p>
+    </div>
+  </div>
   <div class="btn-row no-print" style="margin-top:0"><button class="btn-ghost" onclick="copyIt('wallet',this)">Copy wallet card</button></div>
 
   <h3>3. Emergency room log</h3>
@@ -636,6 +652,7 @@ function build() {
   document.getElementById('wallet').textContent = W.join('\n');
   document.getElementById('erlog').textContent = L.join('\n');
   document.getElementById('why').innerHTML = whyHTML();
+  renderQR();
   show(2);
 }
 
@@ -652,6 +669,461 @@ function whyHTML() {
   h += '<li><b>Keep it current.</b> An out of date medication list is worse than none. Email yourself the link, and when something changes, open it, fix the one line, and print a new copy. Two minutes, once in a while.</li>';
   h += '</ul>';
   return h;
+}
+
+/* ============================================================
+   Minimal QR Code generator, byte mode, no dependencies.
+   Written so the toolkit keeps working with no internet.
+   Returns a square array of 0/1 modules.
+   ============================================================ */
+var QR_RS_SRC = {
+  L: '1,26,19|1,44,34|1,70,55|1,100,80|1,134,108|2,86,68|2,98,78|2,121,97|2,146,116|2,86,68;2,87,69|4,101,81|2,116,92;2,117,93|4,133,107|3,145,115;1,146,116|5,109,87;1,110,88|5,122,98;1,123,99|1,135,107;5,136,108|5,150,120;1,151,121|3,141,113;4,142,114|3,135,107;5,136,108|4,144,116;4,145,117|2,139,111;7,140,112|4,151,121;5,152,122|6,147,117;4,148,118|8,132,106;4,133,107|10,142,114;2,143,115|8,152,122;4,153,123|3,147,117;10,148,118|7,146,116;7,147,117|5,145,115;10,146,116|13,145,115;3,146,116|17,145,115|17,145,115;1,146,116|13,145,115;6,146,116|12,151,121;7,152,122|6,151,121;14,152,122|17,152,122;4,153,123|4,152,122;18,153,123|20,147,117;4,148,118|19,148,118;6,149,119',
+  M: '1,26,16|1,44,28|1,70,44|2,50,32|2,67,43|4,43,27|4,49,31|2,60,38;2,61,39|3,58,36;2,59,37|4,69,43;1,70,44|1,80,50;4,81,51|6,58,36;2,59,37|8,59,37;1,60,38|4,64,40;5,65,41|5,65,41;5,66,42|7,73,45;3,74,46|10,74,46;1,75,47|9,69,43;4,70,44|3,70,44;11,71,45|3,67,41;13,68,42|17,68,42|17,74,46|4,75,47;14,76,48|6,73,45;14,74,46|8,75,47;13,76,48|19,74,46;4,75,47|22,73,45;3,74,46|3,73,45;23,74,46|21,73,45;7,74,46|19,75,47;10,76,48|2,74,46;29,75,47|10,74,46;23,75,47|14,74,46;21,75,47|14,74,46;23,75,47|12,75,47;26,76,48|6,75,47;34,76,48|29,74,46;14,75,47|13,74,46;32,75,47|40,75,47;7,76,48|18,75,47;31,76,48'
+};
+var QR_ALIGN_SRC = '|6,18|6,22|6,26|6,30|6,34|6,22,38|6,24,42|6,26,46|6,28,50|6,30,54|6,32,58|6,34,62|6,26,46,66|6,26,48,70|6,26,50,74|6,30,54,78|6,30,56,82|6,30,58,86|6,34,62,90|6,28,50,72,94|6,26,50,74,98|6,30,54,78,102|6,28,54,80,106|6,32,58,84,110|6,30,58,86,114|6,34,62,90,118|6,26,50,74,98,122|6,30,54,78,102,126|6,26,52,78,104,130|6,30,56,82,108,134|6,34,60,86,112,138|6,30,58,86,114,142|6,34,62,90,118,146|6,30,54,78,102,126,150|6,24,50,76,102,128,154|6,28,54,80,106,132,158|6,32,58,84,110,136,162|6,26,54,82,110,138,166|6,30,58,86,114,142,170';
+
+var QR_RS = null, QR_ALIGN = null;
+function qrTables() {
+  if (QR_RS) return;
+  QR_RS = {};
+  ['L', 'M'].forEach(function (k) {
+    QR_RS[k] = QR_RS_SRC[k].split('|').map(function (v) {
+      return v.split(';').map(function (g) {
+        return g.split(',').map(Number);
+      });
+    });
+  });
+  QR_ALIGN = QR_ALIGN_SRC.split('|').map(function (v) {
+    return v === '' ? [] : v.split(',').map(Number);
+  });
+}
+
+/* ---- GF(256), primitive polynomial 0x11d ---- */
+var QR_EXP = new Array(512), QR_LOG = new Array(256);
+(function () {
+  var x = 1;
+  for (var i = 0; i < 255; i++) {
+    QR_EXP[i] = x;
+    QR_LOG[x] = i;
+    x <<= 1;
+    if (x & 0x100) x ^= 0x11d;
+  }
+  for (var j = 255; j < 512; j++) QR_EXP[j] = QR_EXP[j - 255];
+})();
+function gfMul(a, b) { return (a === 0 || b === 0) ? 0 : QR_EXP[QR_LOG[a] + QR_LOG[b]]; }
+
+/* Generator polynomial for n error correction codewords */
+function qrGenPoly(n) {
+  var poly = [1];
+  for (var i = 0; i < n; i++) {
+    var next = new Array(poly.length + 1).fill(0);
+    for (var j = 0; j < poly.length; j++) {
+      next[j] ^= poly[j];
+      next[j + 1] ^= gfMul(poly[j], QR_EXP[i]);
+    }
+    poly = next;
+  }
+  return poly;
+}
+function qrEC(data, n) {
+  var gen = qrGenPoly(n);
+  var rem = data.slice().concat(new Array(n).fill(0));
+  for (var i = 0; i < data.length; i++) {
+    var f = rem[i];
+    if (f === 0) continue;
+    for (var j = 1; j < gen.length; j++) rem[i + j] ^= gfMul(gen[j], f);
+  }
+  return rem.slice(data.length);
+}
+
+/* ---- UTF-8 bytes ---- */
+function qrBytes(str) {
+  var out = [], s = unescape(encodeURIComponent(String(str)));
+  for (var i = 0; i < s.length; i++) out.push(s.charCodeAt(i) & 0xff);
+  return out;
+}
+
+/* ---- Bit buffer ---- */
+function QRBits() { this.buf = []; this.len = 0; }
+QRBits.prototype.put = function (num, bits) {
+  for (var i = bits - 1; i >= 0; i--) this.putBit(((num >>> i) & 1) === 1);
+};
+QRBits.prototype.putBit = function (bit) {
+  var i = Math.floor(this.len / 8);
+  if (this.buf.length <= i) this.buf.push(0);
+  if (bit) this.buf[i] |= (0x80 >>> (this.len % 8));
+  this.len++;
+};
+
+/* ---- Format and version information ---- */
+function qrFormatBits(ecLevel, mask) {
+  var ecBits = { L: 1, M: 0, Q: 3, H: 2 }[ecLevel];
+  var data = (ecBits << 3) | mask;
+  var d = data << 10;
+  for (var i = 4; i >= 0; i--) {
+    if (d >>> (i + 10)) d ^= 0x537 << i;
+  }
+  return ((data << 10) | d) ^ 0x5412;
+}
+function qrVersionBits(version) {
+  var d = version << 12;
+  for (var i = 5; i >= 0; i--) {
+    if (d >>> (i + 12)) d ^= 0x1f25 << i;
+  }
+  return (version << 12) | d;
+}
+
+/* ---- Mask functions ---- */
+var QR_MASKS = [
+  function (r, c) { return (r + c) % 2 === 0; },
+  function (r) { return r % 2 === 0; },
+  function (r, c) { return c % 3 === 0; },
+  function (r, c) { return (r + c) % 3 === 0; },
+  function (r, c) { return (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0; },
+  function (r, c) { return ((r * c) % 2) + ((r * c) % 3) === 0; },
+  function (r, c) { return ((((r * c) % 2) + ((r * c) % 3)) % 2) === 0; },
+  function (r, c) { return ((((r + c) % 2) + ((r * c) % 3)) % 2) === 0; }
+];
+
+/* ---- Main ---- */
+function qrEncode(text, ecLevel, minVersion) {
+  qrTables();
+  ecLevel = ecLevel || 'M';
+  var data = qrBytes(text);
+  var table = QR_RS[ecLevel];
+
+  /* pick the smallest version that fits */
+  var version = -1;
+  for (var v = (minVersion || 1); v <= 40; v++) {
+    var groups = table[v - 1];
+    var dataCW = 0;
+    for (var g = 0; g < groups.length; g++) dataCW += groups[g][0] * groups[g][2];
+    var lenBits = v < 10 ? 8 : 16;
+    var needBits = 4 + lenBits + data.length * 8;
+    if (needBits <= dataCW * 8) { version = v; break; }
+  }
+  if (version < 0) return null;
+
+  var groups = table[version - 1];
+  var totalDataCW = 0;
+  for (var gi = 0; gi < groups.length; gi++) totalDataCW += groups[gi][0] * groups[gi][2];
+
+  /* build the bit stream */
+  var bits = new QRBits();
+  bits.put(4, 4);
+  bits.put(data.length, version < 10 ? 8 : 16);
+  for (var d2 = 0; d2 < data.length; d2++) bits.put(data[d2], 8);
+  var cap = totalDataCW * 8;
+  for (var t = 0; t < 4 && bits.len < cap; t++) bits.putBit(false);
+  while (bits.len % 8 !== 0) bits.putBit(false);
+  var codewords = bits.buf.slice();
+  var padToggle = true;
+  while (codewords.length < totalDataCW) {
+    codewords.push(padToggle ? 0xec : 0x11);
+    padToggle = !padToggle;
+  }
+
+  /* split into blocks, compute error correction, interleave */
+  var dBlocks = [], eBlocks = [], off = 0;
+  for (var gj = 0; gj < groups.length; gj++) {
+    var cnt = groups[gj][0], tot = groups[gj][1], dat = groups[gj][2];
+    for (var b = 0; b < cnt; b++) {
+      var chunk = codewords.slice(off, off + dat);
+      off += dat;
+      dBlocks.push(chunk);
+      eBlocks.push(qrEC(chunk, tot - dat));
+    }
+  }
+  var final = [], maxD = 0, maxE = 0;
+  dBlocks.forEach(function (x) { if (x.length > maxD) maxD = x.length; });
+  eBlocks.forEach(function (x) { if (x.length > maxE) maxE = x.length; });
+  for (var i2 = 0; i2 < maxD; i2++) {
+    for (var j2 = 0; j2 < dBlocks.length; j2++) {
+      if (i2 < dBlocks[j2].length) final.push(dBlocks[j2][i2]);
+    }
+  }
+  for (var i3 = 0; i3 < maxE; i3++) {
+    for (var j3 = 0; j3 < eBlocks.length; j3++) {
+      if (i3 < eBlocks[j3].length) final.push(eBlocks[j3][i3]);
+    }
+  }
+
+  /* build the matrix */
+  var size = version * 4 + 17;
+  var m = [], reserved = [];
+  for (var r0 = 0; r0 < size; r0++) {
+    m.push(new Array(size).fill(0));
+    reserved.push(new Array(size).fill(false));
+  }
+  function setF(r, c, val) { m[r][c] = val ? 1 : 0; reserved[r][c] = true; }
+
+  /* finder patterns and separators */
+  function finder(row, col) {
+    for (var r = -1; r <= 7; r++) {
+      for (var c = -1; c <= 7; c++) {
+        var rr = row + r, cc = col + c;
+        if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
+        var on = (r >= 0 && r <= 6 && (c === 0 || c === 6)) ||
+                 (c >= 0 && c <= 6 && (r === 0 || r === 6)) ||
+                 (r >= 2 && r <= 4 && c >= 2 && c <= 4);
+        setF(rr, cc, on);
+      }
+    }
+  }
+  finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
+
+  /* timing patterns */
+  for (var i4 = 8; i4 < size - 8; i4++) {
+    setF(6, i4, i4 % 2 === 0);
+    setF(i4, 6, i4 % 2 === 0);
+  }
+
+  /* alignment patterns */
+  var ap = QR_ALIGN[version - 1];
+  var last = ap.length - 1;
+  for (var a1 = 0; a1 < ap.length; a1++) {
+    for (var a2 = 0; a2 < ap.length; a2++) {
+      /* Only the three that would sit on a finder pattern are omitted.
+         The ones that cross the timing pattern are still drawn. */
+      if ((a1 === 0 && a2 === 0) || (a1 === 0 && a2 === last) || (a1 === last && a2 === 0)) continue;
+      var ar = ap[a1], ac = ap[a2];
+      for (var r2 = -2; r2 <= 2; r2++) {
+        for (var c2 = -2; c2 <= 2; c2++) {
+          var on2 = Math.max(Math.abs(r2), Math.abs(c2)) !== 1;
+          setF(ar + r2, ac + c2, on2);
+        }
+      }
+    }
+  }
+
+  /* dark module and reserved format areas */
+  setF(size - 8, 8, true);
+  for (var f = 0; f < 9; f++) {
+    if (!reserved[8][f]) { m[8][f] = 0; reserved[8][f] = true; }
+    if (!reserved[f][8]) { m[f][8] = 0; reserved[f][8] = true; }
+  }
+  for (var f2 = 0; f2 < 8; f2++) {
+    if (!reserved[8][size - 1 - f2]) { m[8][size - 1 - f2] = 0; reserved[8][size - 1 - f2] = true; }
+    if (!reserved[size - 1 - f2][8]) { m[size - 1 - f2][8] = 0; reserved[size - 1 - f2][8] = true; }
+  }
+  if (version >= 7) {
+    for (var vi = 0; vi < 18; vi++) {
+      var vr = Math.floor(vi / 3), vc = size - 11 + (vi % 3);
+      reserved[vr][vc] = true; m[vr][vc] = 0;
+      reserved[vc][vr] = true; m[vc][vr] = 0;
+    }
+  }
+
+  /* place data in the zigzag */
+  var bitIdx = 0, totalBits = final.length * 8;
+  function nextBit() {
+    if (bitIdx >= totalBits) return 0;
+    var byteI = bitIdx >> 3, bitI = 7 - (bitIdx & 7);
+    bitIdx++;
+    return (final[byteI] >>> bitI) & 1;
+  }
+  var col = size - 1, rowDir = -1, row = size - 1;
+  while (col > 0) {
+    if (col === 6) col--;
+    while (true) {
+      for (var k = 0; k < 2; k++) {
+        var cc2 = col - k;
+        if (!reserved[row][cc2]) m[row][cc2] = nextBit();
+      }
+      row += rowDir;
+      if (row < 0 || row >= size) {
+        row -= rowDir;
+        rowDir = -rowDir;
+        break;
+      }
+    }
+    col -= 2;
+  }
+
+  /* pick the mask with the lowest penalty */
+  function applyMask(mat, maskFn) {
+    var out = mat.map(function (r) { return r.slice(); });
+    for (var r = 0; r < size; r++) {
+      for (var c = 0; c < size; c++) {
+        if (!reserved[r][c] && maskFn(r, c)) out[r][c] ^= 1;
+      }
+    }
+    return out;
+  }
+  function penalty(mat) {
+    var score = 0, r, c, i, run, last;
+    /* rule 1: runs of five or more */
+    for (r = 0; r < size; r++) {
+      run = 1; last = mat[r][0];
+      for (c = 1; c < size; c++) {
+        if (mat[r][c] === last) { run++; } else { if (run >= 5) score += run - 2; run = 1; last = mat[r][c]; }
+      }
+      if (run >= 5) score += run - 2;
+    }
+    for (c = 0; c < size; c++) {
+      run = 1; last = mat[0][c];
+      for (r = 1; r < size; r++) {
+        if (mat[r][c] === last) { run++; } else { if (run >= 5) score += run - 2; run = 1; last = mat[r][c]; }
+      }
+      if (run >= 5) score += run - 2;
+    }
+    /* rule 2: 2x2 blocks */
+    for (r = 0; r < size - 1; r++) {
+      for (c = 0; c < size - 1; c++) {
+        var s = mat[r][c] + mat[r][c + 1] + mat[r + 1][c] + mat[r + 1][c + 1];
+        if (s === 0 || s === 4) score += 3;
+      }
+    }
+    /* rule 3: finder-like patterns */
+    var pat1 = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0];
+    var pat2 = [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1];
+    function match(get, n) {
+      var hits = 0;
+      for (var st = 0; st + 11 <= n; st++) {
+        var ok1 = true, ok2 = true;
+        for (var q = 0; q < 11; q++) {
+          var v2 = get(st + q);
+          if (v2 !== pat1[q]) ok1 = false;
+          if (v2 !== pat2[q]) ok2 = false;
+        }
+        if (ok1 || ok2) hits++;
+      }
+      return hits;
+    }
+    for (r = 0; r < size; r++) {
+      (function (rr) { score += 40 * match(function (i2) { return mat[rr][i2]; }, size); })(r);
+    }
+    for (c = 0; c < size; c++) {
+      (function (cc) { score += 40 * match(function (i2) { return mat[i2][cc]; }, size); })(c);
+    }
+    /* rule 4: dark module balance */
+    var dark = 0;
+    for (r = 0; r < size; r++) for (c = 0; c < size; c++) dark += mat[r][c];
+    var pct = (dark * 100) / (size * size);
+    score += Math.floor(Math.abs(pct - 50) / 5) * 10;
+    return score;
+  }
+
+  var best = null, bestScore = Infinity, bestMask = 0;
+  for (var mk = 0; mk < 8; mk++) {
+    var cand = applyMask(m, QR_MASKS[mk]);
+    /* write format info before scoring, as the spec requires */
+    var fmt = qrFormatBits(ecLevel, mk);
+    for (var fb = 0; fb < 15; fb++) {
+      var bit = ((fmt >>> fb) & 1);
+      if (fb < 6) cand[fb][8] = bit;
+      else if (fb < 8) cand[fb + 1][8] = bit;
+      else if (fb === 8) cand[8][7] = bit;
+      else cand[8][14 - fb] = bit;
+
+      if (fb < 8) cand[8][size - 1 - fb] = bit;
+      else cand[size - 15 + fb][8] = bit;
+    }
+    cand[size - 8][8] = 1;
+    if (version >= 7) {
+      var vb = qrVersionBits(version);
+      for (var vv = 0; vv < 18; vv++) {
+        var b2 = (vb >>> vv) & 1;
+        cand[Math.floor(vv / 3)][size - 11 + (vv % 3)] = b2;
+        cand[size - 11 + (vv % 3)][Math.floor(vv / 3)] = b2;
+      }
+    }
+    var sc = penalty(cand);
+    if (sc < bestScore) { bestScore = sc; best = cand; bestMask = mk; }
+  }
+  best.version = version;
+  best.mask = bestMask;
+  return best;
+}
+
+
+
+/* ============================================================
+   The wallet card QR.
+   It carries the emergency details as plain text, not a web
+   address, so a phone reads it with no signal and no wifi.
+   ============================================================ */
+/* Short forms, so the square spends its room on the lines that change care */
+var QR_COMM = { few: 'a few words only', none: 'no words; gestures or device', lang: 'speaks another language' };
+var QR_ORIENT = { some: 'sometimes disoriented', no: 'usually disoriented (baseline)' };
+var QR_MOB = { aid: 'cane or walker', chair: 'wheelchair', bed: 'in bed, needs transfer help' };
+
+function qrPayload() {
+  var rows = [];
+  function add(text, drop) { if (text) rows.push({ t: text, d: drop }); }
+  add('EMERGENCY PROFILE', 0);
+  add(S.pname + (S.dob ? '  b. ' + pretty(S.dob) : ''), 0);
+  var base = [];
+  if (QR_COMM[S.comm]) base.push(QR_COMM[S.comm]);
+  if (QR_ORIENT[S.orient]) base.push(QR_ORIENT[S.orient]);
+  if (QR_MOB[S.mob]) base.push(QR_MOB[S.mob]);
+  if (base.length) add('Baseline: ' + base.join('; '), 3);
+  if (S.allergies) add('Allergies: ' + S.allergies.replace(/\n/g, '; '), 1);
+  if (S.devices.length) add('Devices: ' + S.devices.join(', '), 2);
+  if (S.aids.length) add('Needs with them: ' + S.aids.join(', '), 4);
+  if (S.dm1) add('DECIDES: ' + S.dm1 + (S.dm1rel ? ' (' + S.dm1rel + ')' : '') + (S.dm1ph ? ' ' + S.dm1ph : ''), 0);
+  if (S.dm2 && S.dm2ph) add('Backup: ' + S.dm2 + ' ' + S.dm2ph, 5);
+  if (S.callme) add('Goes by: ' + S.callme, 6);
+  if (S.docs.length) add('Papers: ' + S.docs.join('; '), 7);
+  add('Full profile is with this person.', 8);
+  add('Nash Patient Advocacy 704-254-1407', 0);
+
+  var BUDGET = 430;
+  function join(list) { return list.map(function (r) { return r.t; }).join('\n'); }
+  function size(list) { return unescape(encodeURIComponent(join(list))).length; }
+  var live = rows.slice();
+  /* Trim the least important lines first, never the ones marked 0. */
+  for (var pri = 8; pri >= 1 && size(live) > BUDGET; pri--) {
+    live = live.filter(function (r) { return r.d !== pri; });
+  }
+  var text = join(live);
+  if (unescape(encodeURIComponent(text)).length > BUDGET) text = text.slice(0, BUDGET);
+  return text;
+}
+
+function qrRuns(mat) {
+  /* Merge each row's dark modules into runs, so the drawing stays small. */
+  var runs = [], n = mat.length;
+  for (var r = 0; r < n; r++) {
+    var c = 0;
+    while (c < n) {
+      if (mat[r][c]) {
+        var start = c;
+        while (c < n && mat[r][c]) c++;
+        runs.push([start, r, c - start]);
+      } else { c++; }
+    }
+  }
+  return runs;
+}
+
+function qrSVG(mat, quiet) {
+  var n = mat.length, q = quiet === undefined ? 4 : quiet, tot = n + q * 2;
+  var parts = qrRuns(mat).map(function (u) {
+    return 'M' + (u[0] + q) + ' ' + (u[1] + q) + 'h' + u[2] + 'v1h-' + u[2] + 'z';
+  }).join('');
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + tot + ' ' + tot + '" ' +
+         'shape-rendering="crispEdges" role="img" aria-label="Scannable emergency summary">' +
+         '<rect width="' + tot + '" height="' + tot + '" fill="#fff"/>' +
+         '<path d="' + parts + '" fill="#16222e"/></svg>';
+}
+
+var QR_MATRIX = null;
+function renderQR() {
+  var box = document.getElementById('qrbox');
+  var sum = document.getElementById('qrsummary');
+  try {
+    var text = qrPayload();
+    QR_MATRIX = qrEncode(text, 'M');
+    if (!QR_MATRIX) throw new Error('too long');
+    box.innerHTML = qrSVG(QR_MATRIX);
+    sum.textContent = 'What is inside it: ' + text.split('\n').length +
+      ' lines, ' + text.length + ' characters. Test it now with your own phone camera before you rely on it.';
+  } catch (e) {
+    QR_MATRIX = null;
+    box.innerHTML = '';
+    sum.textContent = 'The code could not be built on this device. Everything else still works.';
+  }
 }
 
 /* ============================================================
@@ -1044,8 +1516,31 @@ function buildToolkitPDF() {
 
   need(200);
   heading('2. Wallet Card');
+  para('Cut the card out. The square is the same information in a form any phone camera can read, and it needs no signal and no wifi.', { color: MUTED, gapAfter: 12 });
   para(document.getElementById('wallet').textContent, { font: 'F4', size: 9.2, lead: 12.6, pre: true });
-  y += 24;
+  y += 16;
+  if (QR_MATRIX) {
+    var qn = QR_MATRIX.length, quiet = 4, span = 118;
+    var cell = span / (qn + quiet * 2);
+    need(span + 30);
+    var qx = M, qy = y;
+    doc.rect(qx, qy, span, span, [1, 1, 1]);
+    var runs = qrRuns(QR_MATRIX);
+    for (var q1 = 0; q1 < runs.length; q1++) {
+      doc.rect(qx + (runs[q1][0] + quiet) * cell, qy + (runs[q1][1] + quiet) * cell,
+               runs[q1][2] * cell + 0.15, cell + 0.15, [0, 0, 0]);
+    }
+    var tx = qx + span + 18, tw = MAXW - span - 18;
+    var cap = ['Point a phone camera at this square.',
+               'The emergency details come up as text in about a second.',
+               'It holds the information itself, not a link, so it reads',
+               'the same with no signal and no wifi.'];
+    for (var q2 = 0; q2 < cap.length; q2++) {
+      doc.text(tx, qy + 16 + q2 * 14, cap[q2], q2 === 0 ? 'F2' : 'F1', 10, q2 === 0 ? INK : MUTED);
+    }
+    y += span + 22;
+  }
+  y += 12;
 
   need(200);
   heading('3. Emergency Room Log');
