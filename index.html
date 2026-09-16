@@ -313,6 +313,7 @@ footer a{color:#fff}
       <b>The square goes on the card.</b>
       <p>Any phone camera reads it. The emergency details come up as plain text in about a second, which is faster than anyone can read a page out loud.</p>
       <p><b>It works with no signal.</b> The information is inside the square itself, not on a website. It reads the same in a basement emergency room with no bars and no wifi.</p>
+      <p class="note warn" style="margin:12px 0 0"><b>Anyone who picks up this card can read the square.</b> That is the same thing that makes it work when the person cannot speak and no one can ask you. There is no password on it. Put on the card only what you would be willing for a stranger to see, and keep the fuller detail on the printed page you keep at home.</p>
       <p class="qrlist" id="qrsummary"></p>
     </div>
   </div>
@@ -335,7 +336,7 @@ footer a{color:#fff}
       <button class="btn" onclick="openEmail('mailto')">Email it to myself</button>
       <button class="btn-ghost" onclick="showFallback()">My email did not open</button>
     </div>
-    <p class="hint" style="margin-top:12px">This opens your own email app. The link carries what you typed, and it stays in your email. Nothing is sent to us and nothing is stored on a server.</p>
+    <p class="hint" style="margin-top:12px">This opens your own email app. Nothing is sent to Nash Patient Advocacy and we store nothing. But what you typed travels inside that link, so that email will sit in your email account like any other message. Treat it the way you would treat a piece of paper with the same information on it.</p>
     <div class="fallback" id="fallback">
       <div class="note warn" id="tooLong" style="display:none;margin-top:0"><b>This profile is too detailed to fit in a plain email link.</b> That is a good problem. Use Gmail, Outlook, or copy the message below instead, and it will all come through.</div>
       <b>Nothing happened when you clicked?</b>
@@ -359,7 +360,7 @@ footer a{color:#fff}
   <p class="hint no-print" style="margin-top:10px">The PDF is built on your device. Nothing is uploaded. It carries the Nash Advocacy heading and my contact information on every page, so whoever you hand it to knows where it came from.</p>
 
   <div class="disclaim">
-    <b>Please read this part.</b> This profile is a communication tool. It is not a medical record, a legal document, or a medical order, and it does not by itself give anyone authority to make decisions. It does not replace a Health Care Power of Attorney, a living will, a guardianship order, or a MOST or POST form, and hospital staff will still need to see those. Nothing here is medical or legal advice. Keep the profile current, because an out of date medication list can do harm.
+    <b>Please read this part.</b> This profile is a communication tool. It is not a medical record, a legal document, or a medical order, and it does not by itself give anyone authority to make decisions. It does not replace a Health Care Power of Attorney, a living will, a guardianship order, or a MOST or POST form, and hospital staff will still need to see those. Nothing here is medical or legal advice, it is not a guarantee of any outcome, and using this tool does not make Nash Patient Advocacy your representative or create an advocate-client relationship. Keep the profile current, because an out of date medication list can do harm.
   </div>
 </section>
 
@@ -1570,6 +1571,7 @@ function buildToolkitPDF() {
     doc.text(M, PDF_H - 33, 'A communication tool. Not a medical record, a legal document, or a medical order. Not medical or legal advice.', 'F1', 8, MUTED);
     var lbl = 'Page ' + (p + 1) + ' of ' + total;
     doc.text(PDF_W - M - textWidth('F1', 8, lbl), PDF_H - 33, lbl, 'F1', 8, MUTED);
+    doc.text(M, PDF_H - 22, 'Not a guarantee of any outcome. Using this tool does not create an advocate-client relationship.', 'F1', 8, MUTED);
   }
   return doc.build();
 }
@@ -1601,5 +1603,78 @@ function downloadPDF() {
 /* If this page was opened from an emailed link, rebuild everything. */
 try { restoreFromHash(); } catch (e) {}
 </script>
+
+<!-- ===== NASH DISCLAIMER GATE (added 2026-09-16) ===== -->
+<style>
+#nashGate{position:fixed;inset:0;background:rgba(14,40,66,.78);display:flex;
+  align-items:center;justify-content:center;padding:16px;z-index:99999;overflow-y:auto}
+#nashGate[hidden]{display:none}
+.nashGate-box{background:#fff;max-width:640px;width:100%;border-radius:14px;
+  box-shadow:0 10px 40px rgba(5,25,45,.35);padding:30px 28px;margin:auto;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  color:#3d4b58;line-height:1.6;text-align:left}
+.nashGate-box h2{font-size:24px;margin:0 0 6px;line-height:1.28;color:#16222e;font-weight:700}
+.nashGate-kicker{font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;
+  color:#1b75bc;margin:0 0 6px}
+.nashGate-box p{font-size:16px;margin:0 0 13px}
+.nashGate-box strong{color:#16222e}
+.nashGate-rule{border:0;border-top:1px solid #dbe4ec;margin:18px 0}
+.nashGate-privacy{font-size:15px;color:#3d4b58}
+.nashGate-btn{display:block;width:100%;background:#1b75bc;color:#fff;border:0;
+  padding:16px;font-size:18px;font-family:inherit;font-weight:700;cursor:pointer;
+  margin:6px 0 8px;border-radius:9px;box-shadow:0 3px 10px rgba(27,117,188,.3)}
+.nashGate-btn:hover{background:#0e5285}
+.nashGate-btn:focus-visible{outline:3px solid #b45309;outline-offset:2px}
+.nashGate-foot{font-size:13px;color:#6b7a88;margin:18px 0 0;text-align:center;line-height:1.7}
+@media (max-width:560px){
+  .nashGate-box{padding:24px 20px}
+  .nashGate-box h2{font-size:21px}
+  .nashGate-box p{font-size:15.5px}
+}
+@media print{ #nashGate{display:none!important} }
+</style>
+<div id="nashGate" role="dialog" aria-modal="true" aria-labelledby="nashGateTitle">
+  <div class="nashGate-box">
+    <p class="nashGate-kicker">Please read before you begin</p>
+    <h2 id="nashGateTitle">This is an education tool, not advice</h2>
+    <p>This tool gives <strong>general education</strong> about how to write down a person's health information for an emergency. It is
+    <strong>not legal advice, not medical advice, and not financial advice</strong>,
+    and it is <strong>not a guarantee of any outcome</strong>.</p>
+    <p>Rules change and every situation is different. Using this tool
+    <strong>does not make Nash Patient Advocacy &amp; Consulting your representative</strong>
+    and does not create an advocate-client relationship.</p>
+    <p><strong>Your own paperwork governs.</strong> The deadlines, phone numbers, and
+    instructions printed on your own notice or letter are the ones that count. Confirm
+    with the number on that paperwork, with the patient's plan, or with 1-800-MEDICARE.</p>
+    <hr class="nashGate-rule">
+    <p class="nashGate-privacy"><strong>Your privacy.</strong> Nothing you type is sent to
+    Nash Patient Advocacy. We never see it and we store nothing. Everything stays in your
+    browser, and any PDF is built on your own device.</p>
+    <button class="nashGate-btn" id="nashGateOk" type="button">I understand. Let me begin.</button>
+    <p class="nashGate-foot">Nash Patient Advocacy &amp; Consulting, LLC<br>
+    Rachel Nash, MRC, BCPA &middot; Rock Hill, SC</p>
+  </div>
+</div>
+<script>
+(function(){
+  var g=document.getElementById('nashGate'),b=document.getElementById('nashGateOk');
+  if(!g||!b)return;
+  var K='nashGateAck',seen=false;
+  try{seen=sessionStorage.getItem(K)==='1';}catch(e){seen=false;}
+  if(seen){g.hidden=true;}
+  else{document.body.style.overflow='hidden';setTimeout(function(){b.focus();},60);}
+  b.addEventListener('click',function(){
+    g.hidden=true;document.body.style.overflow='';
+    try{sessionStorage.setItem(K,'1');}catch(e){}
+  });
+  document.addEventListener('keydown',function(e){
+    if(g.hidden)return;
+    if(e.key==='Tab'){e.preventDefault();b.focus();}
+    if(e.key==='Escape'){e.preventDefault();}
+  });
+})();
+</script>
+<!-- ===== END NASH DISCLAIMER GATE ===== -->
+
 </body>
 </html>
